@@ -7,6 +7,7 @@ import {
   RateLimitError,
 } from "./errors";
 import { AccountClient } from "./fabric/services/account/client";
+import { WorkspaceRestClient } from "./fabric/services/rest/client";
 import type { Account } from "./fabric/domains/account/account";
 
 const ENVIRONMENTS = {
@@ -25,6 +26,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 export class TypecallAdmin {
   private apiKey?: string;
   private accessToken?: string;
+  private activeWorkspaceId?: string;
   private accountData?: Account;
   private readonly baseUrl: string;
   private readonly accountUrl: string;
@@ -32,6 +34,7 @@ export class TypecallAdmin {
   private readonly timeoutMs: number;
   private readonly defaultHeaders: Record<string, string>;
   private accountClient: AccountClient;
+  private restClient: WorkspaceRestClient;
 
   constructor(options: AdminSdkOptions = {}) {
     if (options.apiKey !== undefined && !options.apiKey.trim()) {
@@ -65,6 +68,71 @@ export class TypecallAdmin {
       accessToken: this.accessToken ?? "",
       fetch: this.fetchFn,
     });
+
+    this.restClient = new WorkspaceRestClient({
+      baseUrl: this.baseUrl,
+      getAccessToken: () =>
+        this.apiKey || this.accessToken || this.accountClient.getToken(),
+      getWorkspaceId: () => this.activeWorkspaceId,
+      fetch: this.fetchFn,
+    });
+  }
+
+  /**
+   * Sets the active workspace ID for subsequent workspace-scoped requests.
+   */
+  setWorkspaceId(workspaceId: string): void {
+    this.activeWorkspaceId = workspaceId;
+  }
+
+  /**
+   * Returns the active workspace ID, if set.
+   */
+  getWorkspaceId(): string | undefined {
+    return this.activeWorkspaceId;
+  }
+
+  get users() {
+    return this.restClient.users;
+  }
+  get channels() {
+    return this.restClient.channels;
+  }
+  get channelNumbers() {
+    return this.restClient.channelNumbers;
+  }
+  get phones() {
+    return this.restClient.phones;
+  }
+  get phoneNumbers() {
+    return this.restClient.phoneNumbers;
+  }
+  get businessHours() {
+    return this.restClient.businessHours;
+  }
+  get tags() {
+    return this.restClient.tags;
+  }
+  get domains() {
+    return this.restClient.domains;
+  }
+  get workspace() {
+    return this.restClient.workspace;
+  }
+  get files() {
+    return this.restClient.files;
+  }
+  get prompts() {
+    return this.restClient.prompts;
+  }
+  get voices() {
+    return this.restClient.voices;
+  }
+  get billing() {
+    return this.restClient.billing;
+  }
+  get analytics() {
+    return this.restClient.analytics;
   }
 
   /**

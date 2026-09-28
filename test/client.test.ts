@@ -239,4 +239,27 @@ describe("TypecallAdmin", () => {
     expect(client.getAccessToken()).toBeUndefined();
     expect(client.account).toBeUndefined();
   });
+
+  it("attaches workspace ID and authorization to workspace resource calls", async () => {
+    const mockUsers = [{ id: "usr-1", first_name: "John", last_name: "Doe" }];
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: mockUsers }),
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "user_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_123");
+
+    const users = await client.users.list();
+    expect(users).toEqual({ data: mockUsers });
+
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.typecall.com/v1/users");
+    expect(init.headers["Authorization"]).toBe("Bearer user_jwt");
+    expect(init.headers["X-Workspace-ID"]).toBe("ws_123");
+  });
 });
