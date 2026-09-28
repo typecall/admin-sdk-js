@@ -14,7 +14,7 @@ Official TypeScript/JavaScript Admin SDK for Typecall.
 
 - An active [Typecall Account](https://typecall.com)
 - An Admin API key generated from the [Typecall Dashboard](https://dashboard.typecall.com/api-keys)
-- Node.js 18+ (or compatible runtimes like Bun, Deno, Cloudflare Workers, or modern browsers)
+- Node.js 24+ (or compatible runtimes like Bun, Deno, Cloudflare Workers, or modern browsers)
 
 ## Features
 
@@ -39,7 +39,7 @@ yarn add @typecall/admin-sdk
 import { TypecallAdmin } from "@typecall/admin-sdk";
 
 const client = new TypecallAdmin({
-   apiKey: process.env.TYPECALL_API_KEY!,
+  apiKey: process.env.TYPECALL_API_KEY!,
 });
 
 // Example request
