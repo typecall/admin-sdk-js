@@ -1,6 +1,7 @@
 import type { EntityDeleted } from "../../common/entity.js";
 
-export type TagScope = "CallScreen" | "Contact" | "Flow";
+export type TagScope =
+  "CallScreen" | "Contact" | "Flow" | "call-screen" | "contact" | "flow";
 
 export interface Tag {
   id: string;

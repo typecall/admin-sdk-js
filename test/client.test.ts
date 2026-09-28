@@ -599,4 +599,242 @@ describe("TypecallAdmin", () => {
     expect(client.phoneNumbers.search("uk")).toEqual([mockPhoneNumbers[1]]);
     expect(client.phoneNumbers.search("")).toEqual(mockPhoneNumbers);
   });
+
+  it("caches phones and supports instant lookups and search", async () => {
+    const mockPhones = [
+      {
+        id: "ph-1",
+        workspace_id: "ws_1",
+        name: "Reception Desk",
+        model: "SnomD140",
+        serial_number: "SN123456",
+        mac_address: "00:04:13:aa:bb:cc",
+        location: "MT",
+        lines: [],
+        is_cloud_managed: true,
+        sbc_primary: "sbc1.example.com",
+        sbc_secondary: "sbc2.example.com",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "ph-2",
+        workspace_id: "ws_1",
+        name: "Conference Room",
+        model: "YealinkSipT48u",
+        serial_number: "SN789012",
+        mac_address: "00:15:65:dd:ee:ff",
+        location: "UK",
+        lines: [],
+        is_cloud_managed: false,
+        sbc_primary: "sbc1.example.com",
+        sbc_secondary: "sbc2.example.com",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/phones")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockPhones }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.phones.all()).toEqual([]);
+    expect(client.phones.find("ph-1")).toBeUndefined();
+    expect(client.phones.loaded).toBe(false);
+
+    // Initial load: hits server
+    const loaded = await client.phones.listAll();
+    expect(loaded).toEqual(mockPhones);
+    expect(fetchCount).toBe(1);
+    expect(client.phones.loaded).toBe(true);
+
+    // Cached lookups
+    expect(client.phones.all()).toEqual(mockPhones);
+    expect(client.phones.find("ph-1")).toEqual(mockPhones[0]);
+    expect(client.phones.getMany("ph-1", "ph-2")).toEqual(mockPhones);
+
+    // Prefix search on name / model / serial / mac / location
+    expect(client.phones.search("reception")).toEqual([mockPhones[0]]);
+    expect(client.phones.search("snomd140")).toEqual([mockPhones[0]]);
+    expect(client.phones.search("000413aabbcc")).toEqual([mockPhones[0]]);
+    expect(client.phones.search("conference")).toEqual([mockPhones[1]]);
+    expect(client.phones.search("uk")).toEqual([mockPhones[1]]);
+    expect(client.phones.search("")).toEqual(mockPhones);
+  });
+
+  it("caches tags and supports instant lookups and search", async () => {
+    const mockTags = [
+      {
+        id: "tag-1",
+        workspace_id: "ws_1",
+        name: "Support VIP",
+        color: "#3B82F6",
+        scopes: ["Flow"],
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "tag-2",
+        workspace_id: "ws_1",
+        name: "Sales Inbound",
+        color: "#10B981",
+        scopes: ["CallScreen", "Contact"],
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/tags")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockTags }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.tags.all()).toEqual([]);
+    expect(client.tags.find("tag-1")).toBeUndefined();
+    expect(client.tags.loaded).toBe(false);
+
+    const loaded = await client.tags.listAll();
+    expect(loaded).toEqual(mockTags);
+    expect(fetchCount).toBe(1);
+    expect(client.tags.loaded).toBe(true);
+
+    expect(client.tags.all()).toEqual(mockTags);
+    expect(client.tags.find("tag-1")).toEqual(mockTags[0]);
+    expect(client.tags.search("vip")).toEqual([mockTags[0]]);
+    expect(client.tags.search("sales")).toEqual([mockTags[1]]);
+  });
+
+  it("caches domains and supports instant lookups and search", async () => {
+    const mockDomains = [
+      {
+        id: "dom-1",
+        workspace_id: "ws_1",
+        domain: "example.com",
+        verified_at: "2026-01-01T00:00:00Z",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "dom-2",
+        workspace_id: "ws_1",
+        domain: "acme.org",
+        verified_at: null,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/domains")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockDomains }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.domains.all()).toEqual([]);
+    expect(client.domains.loaded).toBe(false);
+
+    const loaded = await client.domains.listAll();
+    expect(loaded).toEqual(mockDomains);
+    expect(fetchCount).toBe(1);
+    expect(client.domains.loaded).toBe(true);
+
+    expect(client.domains.find("dom-1")).toEqual(mockDomains[0]);
+    expect(client.domains.search("example")).toEqual([mockDomains[0]]);
+    expect(client.domains.search("acme")).toEqual([mockDomains[1]]);
+  });
+
+  it("caches channel numbers and supports instant lookups and search", async () => {
+    const mockChannelNumbers = [
+      {
+        id: "cn-1",
+        workspace_id: "ws_1",
+        phone_number_id: "pn-1",
+        channel_id: "ch-1",
+        cid: "+35621000000",
+        name: "Main Line",
+        country: "MT",
+        label: "Office",
+        user_id: null,
+        priority: 1,
+        is_exclusive: false,
+        capabilities: ["Voice"],
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/channel-numbers")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockChannelNumbers }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.channelNumbers.all()).toEqual([]);
+    expect(client.channelNumbers.loaded).toBe(false);
+
+    const loaded = await client.channelNumbers.listAll();
+    expect(loaded).toEqual(mockChannelNumbers);
+    expect(fetchCount).toBe(1);
+    expect(client.channelNumbers.loaded).toBe(true);
+
+    expect(client.channelNumbers.find("cn-1")).toEqual(mockChannelNumbers[0]);
+    expect(client.channelNumbers.search("35621000000")).toEqual([
+      mockChannelNumbers[0],
+    ]);
+  });
 });

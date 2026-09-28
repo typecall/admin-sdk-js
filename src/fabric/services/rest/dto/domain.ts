@@ -1,7 +1,10 @@
-export interface CreateDomainRequest {
-  domain: string;
-}
+import { z } from "zod";
 
-export interface UpdateDomainRequest {
-  domain: string;
-}
+export const CreateDomainRequestSchema = z.object({
+  domain: z.string().min(1),
+});
+
+export type CreateDomainRequest = z.infer<typeof CreateDomainRequestSchema>;
+
+export const UpdateDomainRequestSchema = CreateDomainRequestSchema.partial();
+export type UpdateDomainRequest = z.infer<typeof UpdateDomainRequestSchema>;

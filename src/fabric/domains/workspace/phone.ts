@@ -7,7 +7,8 @@ export type PhoneModel =
   | "SnomD150"
   | "SnomD717"
   | "SnomD785"
-  | "YealinkSipT48u";
+  | "YealinkSipT48u"
+  | "YealinkSipT48U";
 
 export interface PhoneLine {
   id: string;
