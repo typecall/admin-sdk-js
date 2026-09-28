@@ -1,6 +1,7 @@
 import type { CallEvent, CallLog } from "../../../domains/analytics/call.js";
 import type { UtteranceLite } from "../../../domains/analytics/utterance.js";
 import type { GetCallLogsRequest } from "../dto/analytics.js";
+import { isNotFoundError } from "../errors.js";
 import { BaseResourceClient } from "./base.js";
 
 export interface PaginatedCallLogsResponse {
@@ -36,16 +37,35 @@ export class AnalyticsClient extends BaseResourceClient {
     if (params.category) {
       params.category.forEach((c) => query.append("category[]", c));
     }
+    if (params.user_id) {
+      params.user_id.forEach((u) => query.append("user_id[]", u));
+    }
     const qs = query.toString();
-    return this.transport.request<PaginatedCallLogsResponse>(
-      `/analytics/call-logs${qs ? `?${qs}` : ""}`,
-    );
+    const queryString = qs ? `?${qs}` : "";
+
+    return this.transport
+      .request<PaginatedCallLogsResponse>(`/analytics/call-logs${queryString}`)
+      .catch((err) => {
+        if (isNotFoundError(err)) {
+          return this.transport.request<PaginatedCallLogsResponse>(
+            `/reports/call-logs${queryString}`,
+          );
+        }
+        throw err;
+      });
   }
 
-  listCallEvents(callLogId: string): Promise<CallEvent[]> {
-    return this.transport.requestData<CallEvent[]>(
-      `/analytics/call-logs/${callLogId}/events`,
-    );
+  async listCallEvents(callLogId: string): Promise<CallEvent[]> {
+    return this.transport
+      .requestData<CallEvent[]>(`/analytics/call-logs/${callLogId}/events`)
+      .catch((err) => {
+        if (isNotFoundError(err)) {
+          return this.transport.requestData<CallEvent[]>(
+            `/reports/call-logs/${callLogId}/events`,
+          );
+        }
+        throw err;
+      });
   }
 
   listCallUtterances(callLogId: string): Promise<UtteranceLite[]> {

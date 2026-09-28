@@ -227,7 +227,7 @@ export interface Call {
 
 export interface CallLog {
   id: string;
-  workspace_id: string;
+  workspace_id?: string;
   originated_at: string;
   answered_at?: string | null;
   terminated_at?: string | null;
@@ -235,9 +235,10 @@ export interface CallLog {
   dst_handle: Handle;
   src_lookup?: string | null;
   dst_lookup?: string | null;
-  category: CallCategory;
-  outcome: CallOutcome;
+  category: CallCategory | string;
+  outcome?: CallOutcome | string;
+  status?: string;
   recording_duration_ms?: number | null;
   recording_path?: string | null;
-  recording_waveform: number[];
+  recording_waveform?: number[] | string | null;
 }

@@ -23,4 +23,43 @@ export class FilesClient extends BaseResourceClient {
       `/files/link/upload?${params.toString()}`,
     );
   }
+
+  async uploadToS3(data: Blob | ArrayBuffer, url: string): Promise<void> {
+    const response = await fetch(url, {
+      method: "PUT",
+      body: data,
+    });
+    if (!response.ok) {
+      throw new Error(`S3 Upload failed: ${response.statusText}`);
+    }
+  }
+
+  async uploadBlob(
+    blob: Blob,
+    entityId?: string,
+    category = "track",
+    extension = "wav",
+  ): Promise<string> {
+    const { url, path } = await this.getUploadLink(
+      category,
+      entityId,
+      extension,
+    );
+    await this.uploadToS3(blob, url);
+    return path;
+  }
+
+  async uploadTrack(
+    file: { name: string } & Blob,
+    entityId?: string,
+  ): Promise<{ path: string; name: string }> {
+    const extension = file.name.split(".").pop()?.toLowerCase() || "wav";
+    const { url, path } = await this.getUploadLink(
+      "track",
+      entityId,
+      extension,
+    );
+    await this.uploadToS3(file, url);
+    return { path, name: file.name };
+  }
 }

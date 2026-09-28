@@ -1,9 +1,11 @@
 import type { EntityDeleted } from "../../common/entity.js";
 import type { LanguageCode } from "../../common/language.js";
 
-export type PromptScope = "CallFlow" | "CallRedirect";
+export type PromptScope =
+  "CallFlow" | "CallRedirect" | "call-flow" | "voicemail" | (string & {});
 
-export type PromptTrackCategory = "File" | "Tts";
+export type PromptTrackCategory =
+  "File" | "Tts" | "file" | "tts" | (string & {});
 
 export interface PromptTrack {
   id: string;
@@ -13,19 +15,20 @@ export interface PromptTrack {
   tts_ssml?: string | null;
   file_name?: string | null;
   tts_voice_id?: string | null;
-  language_code: LanguageCode;
+  language_code?: LanguageCode | string;
+  language?: string;
 }
 
 export interface Prompt {
   id: string;
-  workspace_id: string;
+  workspace_id?: string;
   name: string;
   scope: PromptScope;
   default_track_id?: string | null;
   entity_id: string;
   tracks: Record<string, PromptTrack>;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 

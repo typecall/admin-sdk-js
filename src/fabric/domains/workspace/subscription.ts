@@ -7,27 +7,29 @@ export type SubscriptionStatus =
   | "PastDue"
   | "Paused"
   | "Canceled"
-  | "Unpaid";
+  | "Unpaid"
+  | (string & {});
 
-export type SubscriptionIntervalUnit = "Day" | "Week" | "Month" | "Year";
+export type SubscriptionIntervalUnit =
+  "Day" | "Week" | "Month" | "Year" | (string & {});
 
 export interface SubscriptionPlan {
   code: string;
   seats: number;
-  unit_price?: Money | null;
-  sub_total?: Money | null;
+  unit_price?: Money | number | string | null;
+  sub_total?: Money | number | string | null;
 }
 
 export interface SubscriptionAddon {
   code: string;
   quantity: number;
-  unit_price?: Money | null;
-  sub_total?: Money | null;
+  unit_price?: Money | number | string | null;
+  sub_total?: Money | number | string | null;
 }
 
 export interface SubscriptionTax {
   name: string;
-  amount: Money;
+  amount: Money | number;
 }
 
 export interface SubscriptionPartner {
@@ -39,22 +41,22 @@ export interface SubscriptionPartner {
 
 export interface Subscription {
   id: string;
-  workspace_id: string;
+  workspace_id?: string;
   number: string;
   status: SubscriptionStatus;
-  interval: number;
-  interval_unit: SubscriptionIntervalUnit;
+  interval: number | string;
+  interval_unit: SubscriptionIntervalUnit | string;
   trial_days_remaining: number;
   renews_on?: string | null;
   currency: string;
   plan?: SubscriptionPlan | null;
-  addons: SubscriptionAddon[];
-  taxes: SubscriptionTax[];
+  addons?: SubscriptionAddon[];
+  taxes?: SubscriptionTax[] | null;
   partner?: SubscriptionPartner | null;
-  sub_total?: Money | null;
-  total?: Money | null;
-  created_at: string;
-  updated_at: string;
+  sub_total?: Money | number | string | null;
+  total?: Money | number | string | null;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 

@@ -5,8 +5,25 @@ import type {
 import { BaseResourceClient } from "./base.js";
 
 export class WorkspaceClient extends BaseResourceClient {
-  get(): Promise<WorkspaceBillingProfile> {
-    return this.transport.requestData<WorkspaceBillingProfile>("/workspace");
+  private cachedProfile: WorkspaceBillingProfile | null = null;
+
+  async get(force = false): Promise<WorkspaceBillingProfile> {
+    if (this.cachedProfile && !force) {
+      return this.cachedProfile;
+    }
+    const profile =
+      await this.transport.requestData<WorkspaceBillingProfile>("/workspace");
+    this.cachedProfile = profile;
+    this.bump();
+    return profile;
+  }
+
+  async load(force = false): Promise<WorkspaceBillingProfile> {
+    return this.get(force);
+  }
+
+  current(): WorkspaceBillingProfile | null {
+    return this.cachedProfile;
   }
 
   async update(data: UpdateWorkspaceRequest): Promise<WorkspaceBillingProfile> {
@@ -17,7 +34,13 @@ export class WorkspaceClient extends BaseResourceClient {
         body: JSON.stringify(data),
       },
     );
+    this.cachedProfile = profile;
     this.bump();
     return profile;
+  }
+
+  override clearCache(): void {
+    super.clearCache();
+    this.cachedProfile = null;
   }
 }

@@ -1,36 +1,42 @@
 import type { EntityDeleted } from "../../common/entity.js";
 import type { LanguageCode } from "../../common/language.js";
 
-export type VoiceGender = "Female" | "Male";
+export type VoiceGender = "Female" | "Male" | (string & {});
 
 export type VoiceProvider =
-  "Aws" | "Azure" | "Deepgram" | "ElevenLabs" | "Google" | "SmallestAi";
+  | "Aws"
+  | "Azure"
+  | "Deepgram"
+  | "ElevenLabs"
+  | "Google"
+  | "SmallestAi"
+  | (string & {});
 
-export type VoiceScope = "Tts" | "VoiceAgent";
+export type VoiceScope = "Tts" | "VoiceAgent" | (string & {});
 
 export interface Voice {
   id: string;
-  workspace_id: string;
+  workspace_id?: string;
   name: string;
-  language_code: LanguageCode;
+  language_code: LanguageCode | string;
   gender: VoiceGender;
   scope: VoiceScope;
   provider: VoiceProvider;
   provider_id: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 
 export interface VoiceLite {
   id: string;
-  workspace_id: string;
+  workspace_id?: string;
   name: string;
-  language_code: LanguageCode;
+  language_code: LanguageCode | string;
   gender: VoiceGender;
   scope: VoiceScope;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 

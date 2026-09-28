@@ -1,17 +1,19 @@
 import type { EntityDeleted } from "../../common/entity.js";
 
-export type PaymentMethodStatus = "Active" | "Expired" | "Failed";
+export type PaymentMethodStatus =
+  "Active" | "Expired" | "Failed" | (string & {});
 
 export interface PaymentMethod {
   id: string;
-  workspace_id: string;
-  last_four: string;
+  workspace_id?: string;
+  last_four?: string;
+  last_four_digits?: string;
   status: PaymentMethodStatus;
   expiry_month: number;
   expiry_year: number;
   is_primary: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 
