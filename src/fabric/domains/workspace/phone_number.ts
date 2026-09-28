@@ -5,11 +5,7 @@ import type { Money } from "../../common/money.js";
 
 export type PhoneNumberCapability = "Voice" | "Sms" | "Mms";
 
-export type NumberMappingType =
-  | "Channel"
-  | "User"
-  | "Extension"
-  | "Continue";
+export type NumberMappingType = "Channel" | "User" | "Extension" | "Continue";
 
 export type NumberMappingData =
   | { Channel: { user_id?: string | null; channel_id: string } }
@@ -45,11 +41,7 @@ export type MatchStrategy = "All" | "Any";
 
 export type ConditionField = "From" | "To";
 
-export type ConditionOperator =
-  | "Equal"
-  | "NotEqual"
-  | "Regex"
-  | "NotRegex";
+export type ConditionOperator = "Equal" | "NotEqual" | "Regex" | "NotRegex";
 
 export interface Condition {
   field: ConditionField;
@@ -173,6 +165,7 @@ export interface PhoneNumber {
   sip_trunk_id: string;
   range_exclusions: string[];
   incoming_call_flow_graph: Record<string, FlowNode>;
+  incoming_call_flow_layout?: Record<string, any> | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;

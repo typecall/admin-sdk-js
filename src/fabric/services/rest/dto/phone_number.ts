@@ -1,6 +1,13 @@
-import type { FlowNode } from "../../../domains/workspace/phone_number.js";
+import { z } from "zod";
 
-export interface UpdatePhoneNumberRequest {
-  incoming_call_flow_graph?: Record<string, FlowNode>;
-  incoming_call_flow_layout?: Uint8Array | null;
-}
+export const FlowLayoutSchema = z.any();
+export type FlowLayout = any;
+
+export const UpdatePhoneNumberRequestSchema = z.object({
+  incoming_call_flow_graph: z.record(z.string(), z.any()).optional(),
+  incoming_call_flow_layout: FlowLayoutSchema.nullable().optional(),
+});
+
+export type UpdatePhoneNumberRequest = z.infer<
+  typeof UpdatePhoneNumberRequestSchema
+>;

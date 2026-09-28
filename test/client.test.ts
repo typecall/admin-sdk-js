@@ -522,4 +522,81 @@ describe("TypecallAdmin", () => {
     expect(client.businessHours.search("york")).toEqual([mockBusinessHours[1]]);
     expect(client.businessHours.search("")).toEqual(mockBusinessHours);
   });
+
+  it("caches phone numbers and supports instant lookups and search", async () => {
+    const mockPhoneNumbers = [
+      {
+        id: "pn-1",
+        workspace_id: "ws_1",
+        name: "Main Line",
+        country: "MT",
+        range_start: "+35621000000",
+        range_end: "+35621000000",
+        capabilities: ["Voice"],
+        sip_trunk_id: "trunk_1",
+        range_exclusions: [],
+        incoming_call_flow_graph: {},
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "pn-2",
+        workspace_id: "ws_1",
+        name: "Support Range",
+        country: "UK",
+        range_start: "+44207000000",
+        range_end: "+44207000099",
+        capabilities: ["Voice", "Sms"],
+        sip_trunk_id: "trunk_1",
+        range_exclusions: [],
+        incoming_call_flow_graph: {},
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/phone-numbers")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockPhoneNumbers }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.phoneNumbers.all()).toEqual([]);
+    expect(client.phoneNumbers.find("pn-1")).toBeUndefined();
+    expect(client.phoneNumbers.loaded).toBe(false);
+
+    // Initial load: hits server
+    const loaded = await client.phoneNumbers.listAll();
+    expect(loaded).toEqual(mockPhoneNumbers);
+    expect(fetchCount).toBe(1);
+    expect(client.phoneNumbers.loaded).toBe(true);
+
+    // Cached lookups
+    expect(client.phoneNumbers.all()).toEqual(mockPhoneNumbers);
+    expect(client.phoneNumbers.find("pn-1")).toEqual(mockPhoneNumbers[0]);
+    expect(client.phoneNumbers.getMany("pn-1", "pn-2")).toEqual(
+      mockPhoneNumbers,
+    );
+
+    // Prefix search on name / range / country
+    expect(client.phoneNumbers.search("main")).toEqual([mockPhoneNumbers[0]]);
+    expect(client.phoneNumbers.search("35621000000")).toEqual([
+      mockPhoneNumbers[0],
+    ]);
+    expect(client.phoneNumbers.search("uk")).toEqual([mockPhoneNumbers[1]]);
+    expect(client.phoneNumbers.search("")).toEqual(mockPhoneNumbers);
+  });
 });
