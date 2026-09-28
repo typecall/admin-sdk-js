@@ -456,4 +456,70 @@ describe("TypecallAdmin", () => {
     expect(client.channels.search("gen")).toEqual([mockChannels[0]]);
     expect(client.channels.search("sal")).toEqual([mockChannels[2]]);
   });
+
+  it("caches business hours and supports instant lookups and search", async () => {
+    const mockBusinessHours = [
+      {
+        id: "bh-1",
+        name: "Standard Office Hours",
+        timezone: "Europe/London",
+        is_scoped_by_period: false,
+        schedule: {},
+        holidays: [],
+        exceptions: [],
+      },
+      {
+        id: "bh-2",
+        name: "Weekend Support",
+        timezone: "America/New_York",
+        is_scoped_by_period: true,
+        schedule: {},
+        holidays: [],
+        exceptions: [],
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/business-hours")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockBusinessHours }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.businessHours.all()).toEqual([]);
+    expect(client.businessHours.find("bh-1")).toBeUndefined();
+    expect(client.businessHours.loaded).toBe(false);
+
+    // Initial load: hits server
+    const loaded = await client.businessHours.listAll();
+    expect(loaded).toEqual(mockBusinessHours);
+    expect(fetchCount).toBe(1);
+    expect(client.businessHours.loaded).toBe(true);
+
+    // Cached lookups
+    expect(client.businessHours.all()).toEqual(mockBusinessHours);
+    expect(client.businessHours.find("bh-1")).toEqual(mockBusinessHours[0]);
+    expect(client.businessHours.getMany("bh-1", "bh-2")).toEqual(
+      mockBusinessHours,
+    );
+
+    // Prefix search on name / timezone
+    expect(client.businessHours.search("standard")).toEqual([
+      mockBusinessHours[0],
+    ]);
+    expect(client.businessHours.search("york")).toEqual([mockBusinessHours[1]]);
+    expect(client.businessHours.search("")).toEqual(mockBusinessHours);
+  });
 });
