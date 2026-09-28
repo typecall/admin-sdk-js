@@ -12,6 +12,10 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./fabric/*": {
+      "types": "./dist/fabric/*.d.ts",
+      "import": "./dist/fabric/*.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -45,6 +49,11 @@
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "minisearch": "^7.2.0",
+    "nanostores": "^1.5.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

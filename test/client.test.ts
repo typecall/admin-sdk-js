@@ -29,7 +29,7 @@ describe("TypecallAdmin", () => {
     expect(res).toEqual(mockData);
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toBe("https://api.typecall.com/v1/orgs/me");
+    expect(url).toBe("https://rest.typecall.com/orgs/me");
     expect(init.headers["Authorization"]).toBe("Bearer tc_test_key");
   });
 
@@ -89,7 +89,7 @@ describe("TypecallAdmin", () => {
     expect(res).toEqual(mockData);
 
     const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toBe("https://api.typecall.dev/v1/test");
+    expect(url).toBe("https://rest.typecall.dev/test");
     expect(init.headers["Authorization"]).toBe("Bearer tc_jwt_token");
   });
 
@@ -254,12 +254,145 @@ describe("TypecallAdmin", () => {
     });
     client.setWorkspaceId("ws_123");
 
-    const users = await client.users.list();
-    expect(users).toEqual({ data: mockUsers });
+    const users = await client.users.listAll();
+    expect(users).toEqual(mockUsers);
 
     const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toBe("https://api.typecall.com/v1/users");
+    expect(url).toBe("https://rest.typecall.com/users");
     expect(init.headers["Authorization"]).toBe("Bearer user_jwt");
     expect(init.headers["X-Workspace-ID"]).toBe("ws_123");
+  });
+
+  it("automatically refreshes token on 401 during workspace resource calls", async () => {
+    const mockUsers = [{ id: "usr-2", first_name: "Jane", last_name: "Doe" }];
+    let userCallCount = 0;
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/tokens")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: { access_token: "refreshed_jwt" } }),
+          };
+        }
+        if (url.includes("/users")) {
+          userCallCount++;
+          const auth = (init?.headers as Record<string, string>)?.[
+            "Authorization"
+          ];
+          if (userCallCount === 1) {
+            expect(auth).toBe("Bearer stale_jwt");
+            return {
+              ok: false,
+              status: 401,
+              statusText: "Unauthorized",
+              text: async () => "Token expired",
+            };
+          }
+          expect(auth).toBe("Bearer refreshed_jwt");
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: mockUsers }),
+          };
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+    const client = new TypecallAdmin({
+      accessToken: "stale_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_123");
+
+    const users = await client.users.listAll();
+    expect(users).toEqual(mockUsers);
+    expect(userCallCount).toBe(2);
+    expect(client.getAccessToken()).toBe("refreshed_jwt");
+  });
+
+  it("caches users and supports instant synchronous lookups and prefix search", async () => {
+    const mockUsers = [
+      {
+        id: "usr-1",
+        first_name: "Alice",
+        last_name: "Smith",
+        email: "alice@typecall.com",
+        extension: "101",
+      },
+      {
+        id: "usr-2",
+        first_name: "Bob",
+        last_name: "Jones",
+        email: "bob@typecall.com",
+        extension: "102",
+      },
+      {
+        id: "usr-3",
+        first_name: "Charlie",
+        last_name: "Brown",
+        email: "charlie@typecall.com",
+        extension: "201",
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/users")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockUsers }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.users.all()).toEqual([]);
+    expect(client.users.find("usr-1")).toBeUndefined();
+    expect(client.users.loaded).toBe(false);
+
+    // Initial load: hits server
+    const loaded = await client.users.listAll();
+    expect(loaded).toEqual(mockUsers);
+    expect(fetchCount).toBe(1);
+    expect(client.users.loaded).toBe(true);
+
+    // Subsequent listAll() without force: served from in-memory cache
+    const cachedAll = await client.users.listAll();
+    expect(cachedAll).toEqual(mockUsers);
+    expect(fetchCount).toBe(1);
+
+    // Synchronous lookups
+    expect(client.users.all()).toEqual(mockUsers);
+    expect(client.users.find("usr-1")).toEqual(mockUsers[0]);
+    expect(client.users.getMany("usr-1", "usr-3")).toEqual([
+      mockUsers[0],
+      mockUsers[2],
+    ]);
+
+    // Prefix search on name
+    expect(client.users.search("ali")).toEqual([mockUsers[0]]);
+    // Prefix search on email
+    expect(client.users.search("bob@")).toEqual([mockUsers[1]]);
+    // Prefix search on extension
+    expect(client.users.search("201")).toEqual([mockUsers[2]]);
+    // Empty search returns all
+    expect(client.users.search("")).toEqual(mockUsers);
+
+    // Switching workspace clears the cache
+    client.setWorkspaceId("ws_2");
+    expect(client.users.loaded).toBe(false);
+    expect(client.users.all()).toEqual([]);
+    expect(client.users.find("usr-1")).toBeUndefined();
   });
 });

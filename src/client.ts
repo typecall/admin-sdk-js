@@ -12,11 +12,11 @@ import type { Account } from "./fabric/domains/account/account";
 
 const ENVIRONMENTS = {
   production: {
-    api: "https://api.typecall.com/v1",
+    api: "https://rest.typecall.com/",
     account: "https://account.typecall.com",
   },
   development: {
-    api: "https://api.typecall.dev/v1",
+    api: "https://rest.typecall.dev/",
     account: "https://account.typecall.dev",
   },
 } as const;
@@ -74,6 +74,12 @@ export class TypecallAdmin {
       getAccessToken: () =>
         this.apiKey || this.accessToken || this.accountClient.getToken(),
       getWorkspaceId: () => this.activeWorkspaceId,
+      refreshAccessToken: async () => {
+        if (this.apiKey) return;
+        const newToken = await this.accountClient.refreshToken();
+        this.accessToken = newToken;
+        return newToken;
+      },
       fetch: this.fetchFn,
     });
   }
@@ -82,7 +88,10 @@ export class TypecallAdmin {
    * Sets the active workspace ID for subsequent workspace-scoped requests.
    */
   setWorkspaceId(workspaceId: string): void {
-    this.activeWorkspaceId = workspaceId;
+    if (this.activeWorkspaceId !== workspaceId) {
+      this.activeWorkspaceId = workspaceId;
+      this.restClient.clearCaches();
+    }
   }
 
   /**
@@ -128,8 +137,21 @@ export class TypecallAdmin {
   get voices() {
     return this.restClient.voices;
   }
+  get invoices() {
+    return this.restClient.invoices;
+  }
+  get paymentMethods() {
+    return this.restClient.paymentMethods;
+  }
+  get subscriptions() {
+    return this.restClient.subscriptions;
+  }
   get billing() {
-    return this.restClient.billing;
+    return {
+      invoices: this.restClient.invoices,
+      paymentMethods: this.restClient.paymentMethods,
+      subscriptions: this.restClient.subscriptions,
+    };
   }
   get analytics() {
     return this.restClient.analytics;

@@ -13,8 +13,8 @@ export interface AdminSdkOptions {
 
   /**
    * Environment preset to use. Defaults to "production".
-   * - "production": https://api.typecall.com/v1 and https://account.typecall.com
-   * - "development": https://api.typecall.dev/v1 and https://account.typecall.dev
+   * - "production": https://rest.typecall.com and https://account.typecall.com
+   * - "development": https://rest.typecall.dev and https://account.typecall.dev
    * @default "production"
    */
   environment?: TypecallEnvironment;
