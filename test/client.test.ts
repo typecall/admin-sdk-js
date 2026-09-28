@@ -395,4 +395,65 @@ describe("TypecallAdmin", () => {
     expect(client.users.all()).toEqual([]);
     expect(client.users.find("usr-1")).toBeUndefined();
   });
+
+  it("caches channels, filters public channels, and supports instant lookups and search", async () => {
+    const mockChannels = [
+      {
+        id: "ch-1",
+        name: "General",
+        is_private: false,
+      },
+      {
+        id: "ch-2",
+        name: "Private Support",
+        is_private: true,
+      },
+      {
+        id: "ch-3",
+        name: "Sales",
+        is_private: false,
+      },
+    ];
+    let fetchCount = 0;
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/channels")) {
+        fetchCount++;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: mockChannels }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    expect(client.channels.all()).toEqual([]);
+    expect(client.channels.find("ch-1")).toBeUndefined();
+    expect(client.channels.loaded).toBe(false);
+
+    // Initial load: hits server
+    const loaded = await client.channels.listAll();
+    expect(loaded).toEqual(mockChannels);
+    expect(fetchCount).toBe(1);
+    expect(client.channels.loaded).toBe(true);
+
+    // Cached lookups
+    expect(client.channels.all()).toEqual(mockChannels);
+    expect(client.channels.publicChannels()).toEqual([
+      mockChannels[0],
+      mockChannels[2],
+    ]);
+    expect(client.channels.find("ch-1")).toEqual(mockChannels[0]);
+
+    // Prefix search on channel name
+    expect(client.channels.search("gen")).toEqual([mockChannels[0]]);
+    expect(client.channels.search("sal")).toEqual([mockChannels[2]]);
+  });
 });
