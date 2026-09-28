@@ -1,6 +1,6 @@
 {
   "name": "@typecall/admin-sdk",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "JS/TS Admin SDK for Typecall APIs",
   "type": "module",
   "main": "./dist/index.cjs",
