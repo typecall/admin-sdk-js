@@ -1,14 +1,35 @@
+export type TypecallEnvironment = "production" | "development";
+
 export interface AdminSdkOptions {
   /**
-   * API key used to authenticate requests with the Typecall Admin API.
+   * API key used to authenticate server-to-server requests with the Typecall Admin API.
    */
-  apiKey: string;
+  apiKey?: string;
+
+  /**
+   * Access token (JWT) used for user / browser session authentication.
+   */
+  accessToken?: string;
+
+  /**
+   * Environment preset to use. Defaults to "production".
+   * - "production": https://api.typecall.com/v1 and https://account.typecall.com
+   * - "development": https://api.typecall.dev/v1 and https://account.typecall.dev
+   * @default "production"
+   */
+  environment?: TypecallEnvironment;
 
   /**
    * Base URL for the Typecall Admin API.
-   * @default "https://api.typecall.com/v1"
+   * If not provided, defaults to the URL for the selected environment.
    */
   baseUrl?: string;
+
+  /**
+   * Base URL for the Typecall Account Service.
+   * If not provided, defaults to the URL for the selected environment.
+   */
+  accountUrl?: string;
 
   /**
    * Optional custom fetch implementation (defaults to global fetch).
