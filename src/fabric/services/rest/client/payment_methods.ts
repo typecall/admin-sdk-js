@@ -1,5 +1,8 @@
 import type { PaymentMethod } from "../../../domains/workspace/payment_method.js";
-import type { CreatePaymentMethodUrlResponse } from "../dto/payment_method.js";
+import type {
+  CreatePaymentMethodRequest,
+  CreatePaymentMethodUrlResponse,
+} from "../dto/payment_method.js";
 import { BaseResourceClient } from "./base.js";
 
 export class PaymentMethodsClient extends BaseResourceClient<PaymentMethod> {
@@ -29,6 +32,24 @@ export class PaymentMethodsClient extends BaseResourceClient<PaymentMethod> {
     const item = await this.transport.requestData<PaymentMethod>(
       `/payment-methods/${id}`,
     );
+    this.setItem(item);
+    this.bump();
+    return item;
+  }
+
+  async create(data: CreatePaymentMethodRequest): Promise<PaymentMethod> {
+    const item = await this.transport.requestData<PaymentMethod>(
+      "/payment-methods",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
+    if (item.is_primary) {
+      for (const existing of this.items.values()) {
+        existing.is_primary = existing.id === item.id;
+      }
+    }
     this.setItem(item);
     this.bump();
     return item;

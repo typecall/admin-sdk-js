@@ -47,6 +47,39 @@ const org = await client.request<{ id: string; name: string }>("/orgs/me");
 console.log(org);
 ```
 
+## Releasing a New Version
+
+Releases are published automatically to npm using GitHub Actions and npm Trusted Publishing (OIDC with provenance).
+
+1. **Test and verify locally**:
+
+   ```bash
+   npm run typecheck
+   npm run test
+   npm run build
+   ```
+
+2. **Bump the version**:
+
+   ```bash
+   npm version patch   # or minor / major
+   ```
+
+   _(This updates `package.json` and creates a local git commit and tag)._
+
+3. **Push the commit and tag to GitHub**:
+
+   ```bash
+   git push origin main --tags
+   ```
+
+4. **Publish the Release on GitHub**:
+   - Go to [GitHub Releases](https://github.com/typecall/admin-sdk-js/releases) and click **Draft a new release**.
+   - Select the newly pushed tag (e.g., `v0.2.1`).
+   - Fill in release notes and click **Publish release**.
+
+GitHub Actions will automatically run type checks, execute tests, build the package, and publish to npm with cryptographic provenance.
+
 ## Issues & Support
 
 - **Client SDK Bugs & Feature Requests**: Please [open a GitHub issue](https://github.com/typecall/admin-sdk-js/issues) for issues with the JavaScript/TypeScript client library.

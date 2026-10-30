@@ -904,7 +904,7 @@ describe("TypecallAdmin", () => {
     expect(blob).toBeInstanceOf(Blob);
   });
 
-  it("caches payment methods and supports primary card updates and deletion", async () => {
+  it("caches payment methods and supports creation, primary card updates and deletion", async () => {
     const mockCards = [
       {
         id: "pm-1",
@@ -942,6 +942,29 @@ describe("TypecallAdmin", () => {
           };
         }
         if (
+          url.endsWith("/payment-methods") &&
+          init?.method === "POST"
+        ) {
+          const body = JSON.parse(init.body as string);
+          expect(body.provider_type).toBe("stripe");
+          expect(body.provider_id).toBe("pm_test_123");
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              data: {
+                id: "pm-3",
+                last_four: "5555",
+                last_four_digits: "5555",
+                status: "Active",
+                expiry_month: 8,
+                expiry_year: 2029,
+                is_primary: false,
+              },
+            }),
+          };
+        }
+        if (
           url.includes("/payment-methods/pm-1") &&
           init?.method === "DELETE"
         ) {
@@ -968,6 +991,14 @@ describe("TypecallAdmin", () => {
 
     await client.paymentMethods.load();
     expect(client.paymentMethods.all()).toHaveLength(2);
+
+    const created = await client.paymentMethods.create({
+      provider_type: "stripe",
+      provider_id: "pm_test_123",
+    });
+    expect(created.id).toBe("pm-3");
+    expect(client.paymentMethods.find("pm-3")).toBeDefined();
+    expect(client.paymentMethods.all()).toHaveLength(3);
     expect(client.paymentMethods.search("1234")).toEqual([mockCards[1]]);
 
     await client.paymentMethods.setAsPrimary("pm-2");
@@ -976,7 +1007,7 @@ describe("TypecallAdmin", () => {
 
     await client.paymentMethods.delete("pm-1");
     expect(client.paymentMethods.find("pm-1")).toBeUndefined();
-    expect(client.paymentMethods.all()).toHaveLength(1);
+    expect(client.paymentMethods.all()).toHaveLength(2);
   });
 
   it("caches subscription and workspace profile", async () => {
