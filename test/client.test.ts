@@ -1046,6 +1046,14 @@ describe("TypecallAdmin", () => {
             json: async () => ({ data: mockSub }),
           };
         }
+        if (url.includes("/workspace") && init?.method === "POST") {
+          const body = JSON.parse(init.body as string);
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ data: { ...mockProfile, id: "ws-new", name: body.name || "Created Corp" } }),
+          };
+        }
         if (url.includes("/workspace") && init?.method === "PATCH") {
           const body = JSON.parse(init.body as string);
           return {

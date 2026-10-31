@@ -48,3 +48,13 @@ export const UpdateWorkspaceRequestSchema = z.object({
 export type UpdateWorkspaceRequest = z.infer<
   typeof UpdateWorkspaceRequestSchema
 >;
+
+export const CreateWorkspaceRequestSchema = z.object({
+  name: z.string().optional(),
+  provider_type: z.string().min(1),
+  provider_id: z.string().min(1),
+});
+
+export type CreateWorkspaceRequest = z.infer<
+  typeof CreateWorkspaceRequestSchema
+>;

@@ -1,6 +1,7 @@
 import type {
   WorkspaceBillingProfile,
   UpdateWorkspaceRequest,
+  CreateWorkspaceRequest,
 } from "../dto/workspace.js";
 import { BaseResourceClient } from "./base.js";
 
@@ -24,6 +25,35 @@ export class WorkspaceClient extends BaseResourceClient {
 
   current(): WorkspaceBillingProfile | null {
     return this.cachedProfile;
+  }
+
+  async create(data: CreateWorkspaceRequest): Promise<WorkspaceBillingProfile> {
+    const profile = await this.transport.requestData<WorkspaceBillingProfile>(
+      "/workspace",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
+    this.cachedProfile = profile;
+    this.bump();
+    return profile;
+  }
+
+  async exists(): Promise<boolean> {
+    try {
+      await this.get(true);
+      return true;
+    } catch (err: any) {
+      if (
+        err?.name === "NotFoundError" ||
+        err?.status === 404 ||
+        err?.statusCode === 404
+      ) {
+        return false;
+      }
+      throw err;
+    }
   }
 
   async update(data: UpdateWorkspaceRequest): Promise<WorkspaceBillingProfile> {
