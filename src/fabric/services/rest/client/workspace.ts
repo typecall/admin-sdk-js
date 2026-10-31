@@ -40,22 +40,6 @@ export class WorkspaceClient extends BaseResourceClient {
     return profile;
   }
 
-  async exists(): Promise<boolean> {
-    try {
-      await this.get(true);
-      return true;
-    } catch (err: any) {
-      if (
-        err?.name === "NotFoundError" ||
-        err?.status === 404 ||
-        err?.statusCode === 404
-      ) {
-        return false;
-      }
-      throw err;
-    }
-  }
-
   async update(data: UpdateWorkspaceRequest): Promise<WorkspaceBillingProfile> {
     const profile = await this.transport.requestData<WorkspaceBillingProfile>(
       "/workspace",
