@@ -22,6 +22,23 @@ export type UpdateWorkspaceAddress = z.infer<
   typeof UpdateWorkspaceAddressSchema
 >;
 
+export const SubscriptionPlanSchema = z.enum([
+  "EssentialMonthly",
+  "EssentialYearly",
+  "ProMonthly",
+  "ProYearly",
+  "Enterprise",
+]);
+export type SubscriptionPlan = z.infer<typeof SubscriptionPlanSchema>;
+
+export const TrialPlanSchema = z.enum([
+  "EssentialMonthly",
+  "EssentialYearly",
+  "ProMonthly",
+  "ProYearly",
+]);
+export type TrialPlan = z.infer<typeof TrialPlanSchema>;
+
 export interface WorkspaceBillingProfile {
   id: string;
   name: string;
@@ -32,6 +49,8 @@ export interface WorkspaceBillingProfile {
   contact_surname?: string | null;
   contact_email?: string | null;
   tax_number?: string | null;
+  plan?: SubscriptionPlan | (string & {}) | null;
+  seats?: number | null;
   address?: WorkspaceBillingAddress | null;
   created_at?: string;
   updated_at?: string;
@@ -53,6 +72,8 @@ export const CreateWorkspaceRequestSchema = z.object({
   name: z.string().optional(),
   provider_type: z.string().min(1),
   provider_id: z.string().min(1),
+  plan: TrialPlanSchema,
+  seats: z.number().int().min(5),
 });
 
 export type CreateWorkspaceRequest = z.infer<
