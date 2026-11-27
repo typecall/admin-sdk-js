@@ -39,9 +39,13 @@ export class PromptsClient extends BaseResourceClient<Prompt> {
   }
 
   async create(data: CreatePromptRequest): Promise<Prompt> {
+    const payload = {
+      scope: "CallFlow",
+      ...data,
+    };
     const prompt = await this.transport.requestData<Prompt>("/prompts", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     this.setItem(prompt);
     this.bump();

@@ -18,7 +18,7 @@ export const PromptTrackSchema = z.object({
 
 export const CreatePromptRequestSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  scope: z.string().optional().default("call-flow"),
+  scope: z.string().optional().default("CallFlow"),
   entity_id: z.string(),
   default_track_id: z.string().optional().nullable(),
   tracks: z.record(z.string(), PromptTrackSchema),

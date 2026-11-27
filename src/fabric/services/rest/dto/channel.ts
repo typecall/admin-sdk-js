@@ -53,6 +53,13 @@ export const ChannelUserAssignmentSchema = z.object({
   role: z.string(),
 });
 
+export const ChannelAgentAssignmentSchema = z.object({
+  id: z.string(),
+  instructions: z.string().nullable().optional(),
+  instructions_voice: z.string().nullable().optional(),
+  instructions_messages: z.string().nullable().optional(),
+});
+
 export const CreateChannelRequestSchema = z.object({
   name: z.string().min(1, "Name is required"),
   avatar_path: z.string().nullable().optional(),
@@ -66,6 +73,7 @@ export const CreateChannelRequestSchema = z.object({
   outgoing_call_mappings: z.array(ChannelOutgoingCallMappingSchema).optional(),
   ai_agent: ChannelAiAgentSchema.nullable().optional(),
   users: z.array(ChannelUserAssignmentSchema).optional(),
+  agents: z.array(ChannelAgentAssignmentSchema).optional(),
 });
 
 export type CreateChannelRequest = z.infer<typeof CreateChannelRequestSchema>;
@@ -74,3 +82,6 @@ export const UpdateChannelRequestSchema = CreateChannelRequestSchema.partial();
 export type UpdateChannelRequest = z.infer<typeof UpdateChannelRequestSchema>;
 
 export type ChannelUserAssignment = z.infer<typeof ChannelUserAssignmentSchema>;
+export type ChannelAgentAssignment = z.infer<
+  typeof ChannelAgentAssignmentSchema
+>;

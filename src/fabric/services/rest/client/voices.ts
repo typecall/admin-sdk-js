@@ -3,7 +3,7 @@ import { BaseResourceClient } from "./base.js";
 
 export class VoicesClient extends BaseResourceClient<Voice> {
   protected override extractSearchTerms(item: Voice): string {
-    return `${item.name} ${item.language_code} ${item.gender} ${item.provider}`.toLowerCase();
+    return `${item.name} ${item.language_code} ${item.gender} ${item.scope}`.toLowerCase();
   }
 
   async listAll(force = false): Promise<Voice[]> {

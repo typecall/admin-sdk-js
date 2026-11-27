@@ -5,6 +5,8 @@ import {
   AuthenticationError,
   NotFoundError,
 } from "../src/errors";
+import { CreateAgentRequestSchema } from "../src/fabric/services/rest/dto/agent";
+import { CreateChannelRequestSchema } from "../src/fabric/services/rest/dto/channel";
 
 describe("TypecallAdmin", () => {
   it("throws if apiKey is missing", () => {
@@ -941,10 +943,7 @@ describe("TypecallAdmin", () => {
             }),
           };
         }
-        if (
-          url.endsWith("/payment-methods") &&
-          init?.method === "POST"
-        ) {
+        if (url.endsWith("/payment-methods") && init?.method === "POST") {
           const body = JSON.parse(init.body as string);
           expect(body.provider_type).toBe("stripe");
           expect(body.provider_id).toBe("pm_test_123");
@@ -1051,7 +1050,13 @@ describe("TypecallAdmin", () => {
           return {
             ok: true,
             status: 201,
-            json: async () => ({ data: { ...mockProfile, id: "ws-new", name: body.name || "Created Corp" } }),
+            json: async () => ({
+              data: {
+                ...mockProfile,
+                id: "ws-new",
+                name: body.name || "Created Corp",
+              },
+            }),
           };
         }
         if (url.includes("/workspace") && init?.method === "POST") {
@@ -1131,20 +1136,16 @@ describe("TypecallAdmin", () => {
       {
         id: "v-1",
         name: "Ava",
-        language_code: "en-US",
+        language_code: "EnUs",
         gender: "Female",
         scope: "VoiceAgent",
-        provider: "ElevenLabs",
-        provider_id: "ava-1",
       },
       {
         id: "v-2",
         name: "Brian",
-        language_code: "en-GB",
+        language_code: "EnGb",
         gender: "Male",
         scope: "Tts",
-        provider: "Aws",
-        provider_id: "brian-1",
       },
     ];
 
@@ -1292,6 +1293,8 @@ describe("TypecallAdmin", () => {
 
     const mockFetch = vi.fn().mockImplementation(async (url: string) => {
       if (url.includes("/files/link/upload")) {
+        expect(url).toContain("category=Track");
+        expect(url).toContain("entity_type=WorkspacePrompt");
         return {
           ok: true,
           status: 200,
@@ -1390,5 +1393,190 @@ describe("TypecallAdmin", () => {
 
     const events = await client.analytics.listCallEvents("cl-1");
     expect(events).toEqual(mockEvents);
+  });
+
+  it("caches agents and supports search, active filtering, creation, update, and deletion", async () => {
+    const mockAgents = [
+      {
+        id: "ag-1",
+        workspace_id: "ws_1",
+        name: "Front Desk",
+        role: "Receptionist",
+        is_active: true,
+        language_codes: ["EnUs", "Es"],
+        gender: "Female",
+        instructions: "Greet callers politely.",
+        tools: [],
+        created_at: "2026-11-27T12:00:00.000Z",
+        updated_at: "2026-11-27T12:00:00.000Z",
+      },
+      {
+        id: "ag-2",
+        workspace_id: "ws_1",
+        name: "Night Analyst",
+        role: "Analyst",
+        is_active: false,
+        language_codes: ["EnGb"],
+        gender: null,
+        instructions: "Summarize daily call volume.",
+        tools: [],
+        created_at: "2026-11-27T12:00:00.000Z",
+        updated_at: "2026-11-27T12:00:00.000Z",
+      },
+    ];
+
+    let listFetches = 0;
+    const mockFetch = vi
+      .fn()
+      .mockImplementation(async (url: string, init?: RequestInit) => {
+        if (
+          url.endsWith("/agents") &&
+          (!init?.method || init.method === "GET")
+        ) {
+          listFetches++;
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: mockAgents }),
+          };
+        }
+        if (url.endsWith("/agents") && init?.method === "POST") {
+          const body = JSON.parse(init.body as string);
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              data: {
+                id: "ag-3",
+                workspace_id: "ws_1",
+                is_active: true,
+                language_codes: [],
+                gender: null,
+                tools: [],
+                created_at: "2026-11-27T12:00:00.000Z",
+                updated_at: "2026-11-27T12:00:00.000Z",
+                ...body,
+              },
+            }),
+          };
+        }
+        if (url.endsWith("/agents/ag-3") && init?.method === "PATCH") {
+          const body = JSON.parse(init.body as string);
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: {
+                id: "ag-3",
+                workspace_id: "ws_1",
+                name: "Support Operator",
+                role: "Operator",
+                is_active: true,
+                language_codes: ["EnUs"],
+                gender: "Male",
+                instructions: "Handle support tickets.",
+                tools: [],
+                created_at: "2026-11-27T12:00:00.000Z",
+                updated_at: "2026-11-27T12:05:00.000Z",
+                ...body,
+              },
+            }),
+          };
+        }
+        if (url.endsWith("/agents/ag-3") && init?.method === "DELETE") {
+          return { ok: true, status: 204 };
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    await client.agents.load();
+    await client.agents.listAll();
+    expect(listFetches).toBe(1);
+    expect(client.agents.all()).toHaveLength(2);
+    expect(client.agents.find("ag-1")).toEqual(mockAgents[0]);
+    expect(client.agents.active()).toEqual([mockAgents[0]]);
+    expect(client.agents.search("Receptionist")).toEqual([mockAgents[0]]);
+
+    const createPayload = CreateAgentRequestSchema.parse({
+      name: "Support Operator",
+      role: "Operator",
+      language_codes: ["EnUs"],
+      gender: "Male",
+      instructions: "Handle support tickets.",
+    });
+    const created = await client.agents.create(createPayload);
+    expect(created.id).toBe("ag-3");
+    expect(client.agents.find("ag-3")).toEqual(created);
+
+    const updated = await client.agents.update("ag-3", {
+      instructions: "Escalate billing issues.",
+      gender: null,
+    });
+    expect(updated.instructions).toBe("Escalate billing issues.");
+    expect(updated.gender).toBeNull();
+
+    await client.agents.delete("ag-3");
+    expect(client.agents.find("ag-3")).toBeUndefined();
+  });
+
+  it("supports channel agent assignments with per-channel instructions", async () => {
+    const payload = CreateChannelRequestSchema.parse({
+      name: "Support",
+      agents: [
+        {
+          id: "ag-1",
+          instructions: "General support instructions",
+          instructions_voice: "Speak concisely",
+          instructions_messages: "Include helpful links",
+        },
+      ],
+    });
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.endsWith("/channels") && init?.method === "POST") {
+          const body = JSON.parse(init.body as string);
+          expect(body.agents).toEqual(payload.agents);
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              data: {
+                id: "ch-1",
+                workspace_id: "ws_1",
+                name: body.name,
+                is_private: false,
+                record_incoming: "Off",
+                record_outgoing: "Off",
+                incoming_call_distribution: [],
+                outgoing_call_mappings: [],
+                users: [],
+                agents: body.agents,
+                numbers: [],
+                created_at: "2026-11-27T12:00:00.000Z",
+                updated_at: "2026-11-27T12:00:00.000Z",
+              },
+            }),
+          };
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      });
+
+    const client = new TypecallAdmin({
+      accessToken: "test_jwt",
+      fetch: mockFetch as unknown as typeof fetch,
+    });
+    client.setWorkspaceId("ws_1");
+
+    const created = await client.channels.create(payload);
+    expect(created.id).toBe("ch-1");
+    expect(created.agents).toHaveLength(1);
   });
 });

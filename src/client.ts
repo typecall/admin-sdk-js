@@ -101,6 +101,9 @@ export class TypecallAdmin {
     return this.activeWorkspaceId;
   }
 
+  get agents() {
+    return this.restClient.agents;
+  }
   get users() {
     return this.restClient.users;
   }

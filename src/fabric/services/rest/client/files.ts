@@ -12,11 +12,21 @@ export class FilesClient extends BaseResourceClient {
   }
 
   getUploadLink(
-    category: string,
+    category: string = "Track",
     entityId?: string,
     extension?: string,
+    entityType?: string,
   ): Promise<FileUploadLink> {
-    const params = new URLSearchParams({ category });
+    const formattedCategory =
+      category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+    const defaultEntityType =
+      formattedCategory === "Track" ? "WorkspacePrompt" : "WorkspaceUser";
+    const finalEntityType = entityType || defaultEntityType;
+
+    const params = new URLSearchParams({
+      category: formattedCategory,
+      entity_type: finalEntityType,
+    });
     if (entityId) params.append("entity_id", entityId);
     if (extension) params.append("extension", extension);
     return this.transport.requestData<FileUploadLink>(
@@ -37,13 +47,15 @@ export class FilesClient extends BaseResourceClient {
   async uploadBlob(
     blob: Blob,
     entityId?: string,
-    category = "track",
+    category = "Track",
     extension = "wav",
+    entityType = "WorkspacePrompt",
   ): Promise<string> {
     const { url, path } = await this.getUploadLink(
       category,
       entityId,
       extension,
+      entityType,
     );
     await this.uploadToS3(blob, url);
     return path;
@@ -52,12 +64,14 @@ export class FilesClient extends BaseResourceClient {
   async uploadTrack(
     file: { name: string } & Blob,
     entityId?: string,
+    entityType = "WorkspacePrompt",
   ): Promise<{ path: string; name: string }> {
     const extension = file.name.split(".").pop()?.toLowerCase() || "wav";
     const { url, path } = await this.getUploadLink(
-      "track",
+      "Track",
       entityId,
       extension,
+      entityType,
     );
     await this.uploadToS3(file, url);
     return { path, name: file.name };

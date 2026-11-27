@@ -1,6 +1,7 @@
 import type { CallRecordingMode } from "../../common/call.js";
 import type { EntityDeleted } from "../../common/entity.js";
 import type { Handle } from "../../common/handle.js";
+import type { ChannelAgent } from "./channel_agent.js";
 import type { ChannelNumber, ChannelNumberLite } from "./channel_number.js";
 import type { ChannelUser } from "./channel_user.js";
 
@@ -57,6 +58,7 @@ export interface Channel {
   incoming_call_distribution: ChannelIncomingCallDistribution[];
   outgoing_call_mappings: ChannelOutgoingCallMapping[];
   users: ChannelUser[];
+  agents: ChannelAgent[];
   numbers: ChannelNumber[];
   created_at: string;
   updated_at: string;

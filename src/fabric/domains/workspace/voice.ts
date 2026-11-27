@@ -1,7 +1,11 @@
 import type { EntityDeleted } from "../../common/entity.js";
+import type { Gender } from "../../common/gender.js";
 import type { LanguageCode } from "../../common/language.js";
 
-export type VoiceGender = "Female" | "Male" | (string & {});
+export type { Gender };
+
+/** @deprecated Use `Gender` from `../../common/gender.js` instead. */
+export type VoiceGender = Gender;
 
 export type VoiceProvider =
   | "Aws"
@@ -19,30 +23,24 @@ export interface Voice {
   workspace_id?: string;
   name: string;
   language_code: LanguageCode | string;
-  gender: VoiceGender;
+  gender: Gender;
   scope: VoiceScope;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface VoiceInternal extends Voice {
   provider: VoiceProvider;
   provider_id: string;
-  created_at?: string;
-  updated_at?: string;
-  deleted_at?: string | null;
 }
 
-export interface VoiceLite {
-  id: string;
-  workspace_id?: string;
-  name: string;
-  language_code: LanguageCode | string;
-  gender: VoiceGender;
-  scope: VoiceScope;
-  created_at?: string;
-  updated_at?: string;
-  deleted_at?: string | null;
-}
+/** @deprecated Use `Voice` instead. */
+export type VoiceLite = Voice;
 
-export type VoiceEventType = "Upserted" | "UpsertedLite" | "Deleted";
+export type VoiceEventType = "Upserted" | "UpsertedInternal" | "Deleted";
 
 export type VoiceEvent =
   | { event_type: "Upserted"; payload: Voice }
-  | { event_type: "UpsertedLite"; payload: VoiceLite }
+  | { event_type: "UpsertedInternal"; payload: VoiceInternal }
   | { event_type: "Deleted"; payload: EntityDeleted };

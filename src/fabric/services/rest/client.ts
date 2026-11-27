@@ -1,6 +1,7 @@
 import type { FetchFn } from "../account/client.js";
 import { RestError, NotFoundError, isNotFoundError } from "./errors.js";
 import type { RestTransport } from "./client/base.js";
+import { AgentsClient } from "./client/agents.js";
 import { UsersClient } from "./client/users.js";
 import { ChannelsClient } from "./client/channels.js";
 import { ChannelNumbersClient } from "./client/channel_numbers.js";
@@ -36,6 +37,7 @@ export class WorkspaceRestClient implements RestTransport {
   private fetchFn: FetchFn;
   private refreshPromise: Promise<string | void | undefined> | null = null;
 
+  readonly agents: AgentsClient;
   readonly users: UsersClient;
   readonly channels: ChannelsClient;
   readonly channelNumbers: ChannelNumbersClient;
@@ -60,6 +62,7 @@ export class WorkspaceRestClient implements RestTransport {
     this.refreshAccessToken = config.refreshAccessToken;
     this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
 
+    this.agents = new AgentsClient(this);
     this.users = new UsersClient(this);
     this.channels = new ChannelsClient(this);
     this.channelNumbers = new ChannelNumbersClient(this);
@@ -79,6 +82,7 @@ export class WorkspaceRestClient implements RestTransport {
   }
 
   clearCaches(): void {
+    this.agents.clearCache();
     this.users.clearCache();
     this.channels.clearCache();
     this.channelNumbers.clearCache();
